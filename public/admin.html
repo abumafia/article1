@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Panel | Scientific Horizon</title>
+    <link href="https://cdn.tailwindcss.com" rel="stylesheet">
+    <link href="https://stackpath.bootstrapcdn.com/bootstrap/4.5.2/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        .login-container {
+            max-width: 400px;
+            margin: 100px auto;
+        }
+        .section-divider {
+            border-bottom: 2px solid #e2e8f0;
+            margin: 2rem 0;
+        }
+        .progress-bar {
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <div id="login-section">
+        <div class="container">
+            <div class="login-container">
+                <div class="card shadow-lg">
+                    <div class="card-body">
+                        <h3 class="text-center font-weight-bold mb-4">Admin Login</h3>
+                        <div class="form-group">
+                            <label>Username</label>
+                            <input type="text" id="username" class="form-control">
+                        </div>
+                        <div class="form-group">
+                            <label>Password</label>
+                            <input type="password" id="password" class="form-control">
+                        </div>
+                        <button id="login-btn" class="btn btn-primary btn-block">Login</button>
+                        <div id="login-error" class="text-danger mt-3 text-center"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="admin-panel" style="display: none;">
+        <nav class="navbar navbar-dark bg-dark">
+            <div class="container">
+                <span class="navbar-brand">Scientific Horizon Admin</span>
+                <button id="logout-btn" class="btn btn-outline-light">Logout</button>
+            </div>
+        </nav>
+
+        <div class="container py-5">
+            <h2 class="font-weight-bold mb-4">Upload New Article</h2>
+            
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <form id="article-form">
+                        <!-- Basic Information -->
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label class="font-weight-bold">Article Title *</label>
+                                    <input type="text" id="title" class="form-control" required>
+                                </div>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label class="font-weight-bold">Author *</label>
+                                    <input type="text" id="author" class="form-control" required>
+                                </div>
+                            </div>
+                            <!-- YANGI date input -->
+                            <div class="col-md-3">
+                                <div class="form-group">
+                                    <label class="font-weight-bold">Publication Date *</label>
+                                    <input type="date" id="publicationDate" class="form-control" 
+                                           value="" required>
+                                </div>
+                            </div>
+                        </div> <!-- Bu yopish tag'i qo'shildi -->
+
+                        <!-- Files -->
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label class="font-weight-bold">Cover Image *</label>
+                                    <input type="file" id="cover-image" class="form-control-file" accept="image/*" required>
+                                    <small class="text-muted">Recommended: 1200x630px, JPG or PNG</small>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label class="font-weight-bold">PDF File *</label>
+                                    <input type="file" id="pdf-file" class="form-control-file" accept=".pdf" required>
+                                    <small class="text-muted">Max 10MB, PDF format</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Abstract -->
+                        <div class="form-group">
+                            <label class="font-weight-bold">Abstract *</label>
+                            <textarea id="abstract" class="form-control" rows="4" required></textarea>
+                        </div>
+
+                        <!-- Introduction -->
+                        <div class="form-group">
+                            <label class="font-weight-bold">Introduction *</label>
+                            <textarea id="introduction" class="form-control" rows="6" required></textarea>
+                        </div>
+
+                        <!-- Body Sections -->
+                        <div class="section-divider"></div>
+                        <h4 class="font-weight-bold mb-3">Article Body Sections</h4>
+                        <div id="body-sections">
+                            <!-- Sections will be added here -->
+                        </div>
+                        <button type="button" id="add-section" class="btn btn-outline-primary btn-sm mb-4">
+                            + Add Section
+                        </button>
+
+                        <!-- Conclusion -->
+                        <div class="form-group">
+                            <label class="font-weight-bold">Conclusion *</label>
+                            <textarea id="conclusion" class="form-control" rows="4" required></textarea>
+                        </div>
+
+                        <!-- References -->
+                        <div class="form-group">
+                            <label class="font-weight-bold">References (One per line)</label>
+                            <textarea id="references" class="form-control" rows="4" 
+                                      placeholder="Reference 1&#10;Reference 2&#10;Reference 3"></textarea>
+                        </div>
+
+                        <!-- Progress Bar -->
+                        <div class="progress mb-3" style="height: 20px;">
+                            <div id="upload-progress" class="progress-bar progress-bar-striped bg-success" 
+                                 role="progressbar" style="width: 0%"></div>
+                        </div>
+
+                        <!-- Submit -->
+                        <button type="submit" id="submit-btn" class="btn btn-primary btn-lg">
+                            <i class="fas fa-upload mr-2"></i> Publish Article
+                        </button>
+                        <div id="upload-status" class="mt-3"></div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- YANGI havola (jsdelivr orqali) -->
+    <script src="https://cdn.jsdelivr.net/npm/jquery@3.5.1/dist/jquery.min.js"></script>
+    <script>
+        let authToken = null;
+
+        // Login function
+        $('#login-btn').click(function() {
+            const username = $('#username').val();
+            const password = $('#password').val();
+
+            $.post('/api/admin/login', { username, password })
+                .done(function(response) {
+                    authToken = response.token;
+                    localStorage.setItem('adminToken', authToken);
+                    $('#login-section').hide();
+                    $('#admin-panel').show();
+                    initializeForm();
+                })
+                .fail(function() {
+                    $('#login-error').text('Invalid credentials');
+                });
+        });
+
+        // Logout function
+        $('#logout-btn').click(function() {
+            authToken = null;
+            localStorage.removeItem('adminToken');
+            $('#admin-panel').hide();
+            $('#login-section').show();
+        });
+
+        // Check existing token
+        $(document).ready(function() {
+            const savedToken = localStorage.getItem('adminToken');
+            if (savedToken) {
+                authToken = savedToken;
+                $('#login-section').hide();
+                $('#admin-panel').show();
+                initializeForm();
+            }
+        });
+
+        // Initialize form with sections
+        function initializeForm() {
+            // Add first section
+            addBodySection();
+            
+            // Add section button
+            $('#add-section').click(addBodySection);
+            
+            // Set today's date as default
+            const today = new Date().toISOString().split('T')[0];
+            $('#publicationDate').val(today);
+            
+            // Form submission
+            $('#article-form').submit(function(e) {
+                e.preventDefault();
+                submitArticle();
+            });
+        }
+
+        function addBodySection() {
+            const sectionId = Date.now();
+            const sectionHtml = `
+                <div class="card mb-3" id="section-${sectionId}">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <h5 class="mb-0">Section</h5>
+                            <button type="button" class="btn btn-sm btn-danger" 
+                                    onclick="$('#section-${sectionId}').remove()">
+                                Remove
+                            </button>
+                        </div>
+                        <div class="form-group">
+                            <label>Section Heading</label>
+                            <input type="text" class="form-control section-heading" placeholder="Enter section heading">
+                        </div>
+                        <div class="form-group">
+                            <label>Section Content</label>
+                            <textarea class="form-control section-content" rows="3" placeholder="Enter section content"></textarea>
+                        </div>
+                    </div>
+                </div>`;
+            $('#body-sections').append(sectionHtml);
+        }
+
+        function submitArticle() {
+            // Collect form data
+            const title = $('#title').val();
+            const author = $('#author').val();
+            const publicationDate = $('#publicationDate').val(); // <-- XATOLIK: year o'rniga publicationDate
+            const abstract = $('#abstract').val();
+            const introduction = $('#introduction').val();
+            const conclusion = $('#conclusion').val();
+            const references = $('#references').val().split('\n').filter(r => r.trim());
+            
+            // Collect body sections
+            const body = [];
+            $('.section-heading').each(function(index) {
+                const heading = $(this).val();
+                const content = $(this).closest('.card-body').find('.section-content').val();
+                if (heading || content) {
+                    body.push({ heading, content });
+                }
+            });
+
+            // Validate files
+            const coverImage = $('#cover-image')[0].files[0];
+            const pdfFile = $('#pdf-file')[0].files[0];
+            
+            if (!coverImage || !pdfFile) {
+                alert('Please select both cover image and PDF file');
+                return;
+            }
+
+            // Validate date
+            if (!publicationDate) {
+                alert('Please select a publication date');
+                return;
+            }
+
+            // Create FormData
+            const formData = new FormData();
+            formData.append('title', title);
+            formData.append('author', author);
+            formData.append('publicationDate', publicationDate); // <-- To'g'ri o'zgaruvchi
+            formData.append('abstract', abstract);
+            formData.append('introduction', introduction);
+            formData.append('conclusion', conclusion);
+            formData.append('body', JSON.stringify(body));
+            formData.append('references', JSON.stringify(references));
+            formData.append('coverImage', coverImage);
+            formData.append('pdfFile', pdfFile);
+
+            // Disable submit button
+            $('#submit-btn').prop('disabled', true).text('Uploading...');
+
+            // Update progress
+            const progressBar = $('#upload-progress');
+            progressBar.css('width', '10%');
+
+            // Submit
+            $.ajax({
+                url: '/api/admin/articles',
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${authToken}`
+                },
+                data: formData,
+                processData: false,
+                contentType: false,
+                xhr: function() {
+                    const xhr = new window.XMLHttpRequest();
+                    xhr.upload.addEventListener('progress', function(evt) {
+                        if (evt.lengthComputable) {
+                            const percentComplete = 10 + (evt.loaded / evt.total * 90);
+                            progressBar.css('width', percentComplete + '%');
+                        }
+                    }, false);
+                    return xhr;
+                }
+            })
+            .done(function(response) {
+                progressBar.css('width', '100%');
+                $('#upload-status').html(`
+                    <div class="alert alert-success">
+                        <strong>Success!</strong> Article published successfully.
+                        <a href="article.html?slug=${response.article.slug}" target="_blank">View Article</a>
+                    </div>
+                `);
+                
+                // Reset form
+                setTimeout(() => {
+                    $('#article-form')[0].reset();
+                    $('#body-sections').empty();
+                    addBodySection();
+                    // Set default date again
+                    const today = new Date().toISOString().split('T')[0];
+                    $('#publicationDate').val(today);
+                    
+                    progressBar.css('width', '0%');
+                    $('#upload-status').empty();
+                    $('#submit-btn').prop('disabled', false).html('<i class="fas fa-upload mr-2"></i> Publish Article');
+                }, 3000);
+            })
+            .fail(function(xhr) {
+                $('#upload-status').html(`
+                    <div class="alert alert-danger">
+                        <strong>Error:</strong> ${xhr.responseJSON?.error || 'Upload failed'}
+                    </div>
+                `);
+                $('#submit-btn').prop('disabled', false).html('<i class="fas fa-upload mr-2"></i> Publish Article');
+            });
+        }
+    </script>
+</body>
+</html>
